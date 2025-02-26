@@ -157,20 +157,18 @@ def run_tracker_with_parameters(tracker_settings, detections):
                 })
 
         output_data[frame] = {"tracks": frame_tracks}
-        # print(f"Frame {frame}:")
-        # for track in frame_tracks:
-        #     print(track)
     return output_data
 
 def main():
     detections = load_json('detections.json')
+    parameters = load_json('parameters.json')
     tracker_settings = TrackSettings(
-        measurement_noise=4.235956235432715,
-        process_noise=0.013857524486552263,
-        covariance=16.213154333483708,
-        distance_threshold=8.496566110961627,
-        max_age=2,
-        min_hits=1
+        measurement_noise=parameters["measurement_noise"],
+        process_noise=parameters["process_noise"],
+        covariance=parameters["covariance"],
+        distance_threshold=parameters["distance_threshold"],
+        max_age=parameters["max_age"],
+        min_hits=parameters["min_hits"]
     )
     output_data = run_tracker_with_parameters(tracker_settings, detections)
 
