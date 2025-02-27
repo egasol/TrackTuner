@@ -1,6 +1,8 @@
 import json
 import numpy as np
 
+import utilities
+
 class Statistics:
     def __init__(self):
         self.annotation_stats = {}
@@ -87,10 +89,6 @@ class Statistics:
             print(f"  ID Switches: {stats['id_switches']}")
             print(f"  Associated Object IDs: {sorted(stats['associated_obj_ids'])}")
 
-def load_json(file_path):
-    with open(file_path, 'r') as f:
-        return json.load(f)
-
 def process_data(annotations, tracks):
     stats = Statistics()
 
@@ -116,10 +114,10 @@ def process_data(annotations, tracks):
     return stats
 
 def main():
-    annotations = load_json('annotations.json')
-    tracks = load_json('tracked_objects.json')
+    tracked = utilities.load_json(utilities.get_data_path() / 'tracked.json')
+    annotations = utilities.load_json(utilities.get_data_path() / 'annotations.json')
     
-    stats = process_data(annotations, tracks)
+    stats = process_data(annotations, tracked)
     stats.print_statistics()
     print("performance_metric:", stats.get_performance_metric())
 

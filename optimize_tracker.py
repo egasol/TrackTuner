@@ -2,7 +2,10 @@ import json
 import numpy as np
 import optuna
 from pathlib import Path
-from optuna.visualization import plot_optimization_history
+from optuna.visualization import (
+    plot_optimization_history,
+    plot_param_importances
+)
 
 from tracker import Tracker, TrackSettings, run_tracker_with_parameters
 from evaluate_tracker import process_data, Statistics
@@ -31,11 +34,14 @@ def objective(trial):
 
 def main():
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=100)
+    study.optimize(objective, n_trials=200)
 
     parameters_path = utilities.get_data_path() / "parameters.json"
 
     utilities.save_json(parameters_path, study.best_params)
+
+    plot_optimization_history(study).write_image("media/optimization_history.png")
+    plot_param_importances(study).write_image("media/plot_param_importances.png")
 
 if __name__ == "__main__":
     main()
