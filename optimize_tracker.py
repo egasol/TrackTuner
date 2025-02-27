@@ -3,18 +3,21 @@ import numpy as np
 import optuna
 from pathlib import Path
 from optuna.visualization import plot_optimization_history, plot_param_importances
+from typing import Any, Dict
 
 from tracker import Tracker, TrackSettings, run_tracker_with_parameters
 from evaluate_tracker import process_data, Statistics
 import utilities
 
 
-def evaluate_tracker_performance(annotations, tracks):
+def evaluate_tracker_performance(
+    annotations: Dict[str, Any], tracks: Dict[str, Any]
+) -> float:
     stats = process_data(annotations, tracks)
     return stats.get_performance_metric()
 
 
-def objective(trial):
+def objective(trial: optuna.trial.Trial) -> float:
     tracker_settings = TrackSettings(
         measurement_noise=trial.suggest_float("measurement_noise", 0.1, 5.0),
         process_noise=trial.suggest_float("process_noise", 0.0001, 0.1),
@@ -32,7 +35,7 @@ def objective(trial):
     return evaluate_tracker_performance(annotations, tracks)
 
 
-def main():
+def main() -> None:
     study = optuna.create_study(direction="minimize")
     study.optimize(objective, n_trials=200)
 

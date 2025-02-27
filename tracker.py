@@ -2,7 +2,7 @@ import json
 import numpy as np
 from enum import Enum
 from filterpy.kalman import KalmanFilter
-
+from typing import Any, Dict, List, Tuple
 import utilities
 
 
@@ -14,13 +14,13 @@ class TrackStage(Enum):
 class TrackSettings:
     def __init__(
         self,
-        measurement_noise,
-        process_noise,
-        covariance,
-        distance_threshold,
-        max_age,
-        min_hits,
-    ):
+        measurement_noise: float,
+        process_noise: float,
+        covariance: float,
+        distance_threshold: float,
+        max_age: int,
+        min_hits: int,
+    ) -> None:
         self.measurement_noise = measurement_noise
         self.process_noise = process_noise
         self.covariance = covariance
@@ -30,7 +30,9 @@ class TrackSettings:
 
 
 class Track:
-    def __init__(self, id, initial_position, settings):
+    def __init__(
+        self, id: int, initial_position: np.ndarray, settings: TrackSettings
+    ) -> None:
         self.measurement_noise = settings.measurement_noise
         self.covariance = settings.covariance
         self.process_noise = settings.process_noise
@@ -43,7 +45,7 @@ class Track:
         self.hit_streak = 0
         self.time_since_update = 0
 
-    def initialize_kalman_filter(self, initial_position):
+    def initialize_kalman_filter(self, initial_position: np.ndarray) -> KalmanFilter:
         kf = KalmanFilter(dim_x=6, dim_z=3)
         kf.F = np.array(
             [
@@ -62,36 +64,38 @@ class Track:
         kf.x[:3] = initial_position.reshape((3, 1))
         return kf
 
-    def predict(self):
+    def predict(self) -> None:
         self.kf.predict()
         self.age += 1
 
-    def update(self, measurement):
+    def update(self, measurement: np.ndarray) -> None:
         self.kf.update(measurement)
         self.time_since_update = 0
         self.hits += 1
         self.hit_streak += 1
 
-    def get_state(self):
+    def get_state(self) -> np.ndarray:
         return self.kf.x[:3].reshape((3,))
 
-    def __repr__(self):
+    def __repr__(self) -> str:
         return f"Track {self.id}: {self.get_state()} | Stage: {self.stage}"
 
 
 class Tracker:
-    def __init__(self, settings):
-        self.tracks = []
+    def __init__(self, settings: TrackSettings) -> None:
+        self.tracks: List[Track] = []
         self.track_id = 0
         self.distance_threshold = settings.distance_threshold
         self.max_age = settings.max_age
         self.min_hits = settings.min_hits
         self.settings = settings
 
-    def associate_detections_to_tracks(self, detections):
-        assigned_tracks = []
-        unassigned_tracks = list(range(len(self.tracks)))
-        assigned_detections = []
+    def associate_detections_to_tracks(
+        self, detections: List[np.ndarray]
+    ) -> Tuple[List[int], List[int], List[int]]:
+        assigned_tracks: List[int] = []
+        unassigned_tracks: List[int] = list(range(len(self.tracks)))
+        assigned_detections: List[int] = []
 
         for i, track in enumerate(self.tracks):
             min_distance = float("inf")
@@ -108,16 +112,16 @@ class Tracker:
                 assigned_tracks.append(i)
                 assigned_detections.append(best_match)
 
-        unassigned_detections = [
+        unassigned_detections: List[int] = [
             i for i in range(len(detections)) if i not in assigned_detections
         ]
         return assigned_tracks, unassigned_tracks, unassigned_detections
 
-    def predict_tracks(self):
+    def predict_tracks(self) -> None:
         for track in self.tracks:
             track.predict()
 
-    def update_tracks(self, detections):
+    def update_tracks(self, detections: List[np.ndarray]) -> None:
         assigned_tracks, unassigned_tracks, unassigned_detections = (
             self.associate_detections_to_tracks(detections)
         )
@@ -137,13 +141,15 @@ class Tracker:
             if track.time_since_update > 1:
                 track.hit_streak = 0
 
-    def get_tracks(self):
+    def get_tracks(self) -> List[Track]:
         return self.tracks
 
 
-def run_tracker_with_parameters(tracker_settings, detections):
+def run_tracker_with_parameters(
+    tracker_settings: TrackSettings, detections: Dict[str, Any]
+) -> Dict[str, Any]:
     tracker = Tracker(tracker_settings)
-    output_data = {}
+    output_data: Dict[str, Any] = {}
 
     for frame, content in detections.items():
         frame_detections = [
@@ -169,7 +175,7 @@ def run_tracker_with_parameters(tracker_settings, detections):
     return output_data
 
 
-def main():
+def main() -> None:
     parameters_path = utilities.get_data_path() / "parameters.json"
     detections_path = utilities.get_data_path() / "detections.json"
     tracked_path = utilities.get_data_path() / "tracked.json"

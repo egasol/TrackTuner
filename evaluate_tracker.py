@@ -1,16 +1,17 @@
 import json
 import numpy as np
+from typing import Any, Dict, Set
 
 import utilities
 
 
 class Statistics:
-    def __init__(self):
-        self.annotation_stats = {}
-        self.track_stats = {}
-        self.false_positives = 0
+    def __init__(self) -> None:
+        self.annotation_stats: Dict[int, Dict[str, Any]] = {}
+        self.track_stats: Dict[int, Dict[str, Any]] = {}
+        self.false_positives: int = 0
 
-    def add_annotation(self, frame, obj_id, obj_position):
+    def add_annotation(self, frame: int, obj_id: int, obj_position: np.ndarray) -> None:
         if obj_id not in self.annotation_stats:
             self.annotation_stats[obj_id] = {
                 "lifespan": 0,
@@ -21,7 +22,14 @@ class Statistics:
             }
         self.annotation_stats[obj_id]["lifespan"] += 1
 
-    def add_track(self, frame, obj_id, track_id, track_position, obj_position):
+    def add_track(
+        self,
+        frame: int,
+        obj_id: int,
+        track_id: int,
+        track_position: np.ndarray,
+        obj_position: np.ndarray,
+    ) -> bool:
         distance = np.linalg.norm(track_position - obj_position)
 
         if distance <= 4:
@@ -47,21 +55,21 @@ class Statistics:
             return True
         return False
 
-    def update_false_positives(self, track_id):
+    def update_false_positives(self, track_id: int) -> None:
         self.false_positives += 1
 
-    def calculate_statistics(self):
+    def calculate_statistics(self) -> None:
         for obj_id, stats in self.annotation_stats.items():
             tracked_percentage = (stats["tracked"] / stats["lifespan"]) * 100
             stats["successfully_tracked"] = tracked_percentage >= 75
             stats["tracked_percentage"] = tracked_percentage
 
-    def get_performance_metric(self):
+    def get_performance_metric(self) -> float:
         alpha = 10
         beta = 1
         gamma = 0.5
 
-        performance_metric = 0
+        performance_metric = 0.0
         for obj_id, stats in self.annotation_stats.items():
             tracked_percentage = stats["tracked_percentage"]
             id_switches = stats["id_switches"]
@@ -71,7 +79,7 @@ class Statistics:
         performance_metric += gamma * self.false_positives
         return performance_metric
 
-    def print_statistics(self):
+    def print_statistics(self) -> None:
         print("Tracking Performance Statistics:")
         print("Annotations:")
         for obj_id, stats in self.annotation_stats.items():
@@ -93,7 +101,7 @@ class Statistics:
             print(f"  Associated Object IDs: {sorted(stats['associated_obj_ids'])}")
 
 
-def process_data(annotations, tracks):
+def process_data(annotations: Dict[str, Any], tracks: Dict[str, Any]) -> Statistics:
     stats = Statistics()
 
     for frame, annotation in annotations.items():
@@ -103,7 +111,7 @@ def process_data(annotations, tracks):
             stats.add_annotation(frame, obj_id, obj_position)
 
             associated_track_id = None
-            tracked_objs = set()
+            tracked_objs: Set[int] = set()
             for track in tracks.get(frame, {}).get("tracks", []):
                 track_id = track["id"]
                 track_position = np.array([track["x"], track["y"], track["z"]])
@@ -120,7 +128,7 @@ def process_data(annotations, tracks):
     return stats
 
 
-def main():
+def main() -> None:
     tracked = utilities.load_json(utilities.get_data_path() / "tracked.json")
     annotations = utilities.load_json(utilities.get_data_path() / "annotations.json")
 

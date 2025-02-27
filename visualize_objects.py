@@ -5,6 +5,7 @@ from mpl_toolkits.mplot3d import Axes3D
 from itertools import cycle
 from time import time
 from pathlib import Path
+from typing import Dict, Any
 
 import utilities
 
@@ -12,7 +13,7 @@ COLORS = cycle(["r", "g", "b", "y", "c", "m", "k"])
 COLOR_DEFAULT = "b"
 
 
-def plot_tracks(ax, json_data, ignore_id):
+def plot_tracks(ax: Axes3D, json_data: Dict[str, Any], ignore_id: bool) -> None:
     color_map = {}
     for frame, frame_data in json_data.items():
         for track in frame_data["tracks"]:

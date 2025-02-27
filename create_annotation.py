@@ -2,11 +2,12 @@ import json
 import math
 import random
 import numpy as np
+from typing import Dict, List, Any
 
 import utilities
 
 
-def generate_object_positions(frame):
+def generate_object_positions(frame: int) -> List[Dict[str, Any]]:
     return [
         {
             "id": 0,
@@ -29,7 +30,7 @@ def generate_object_positions(frame):
     ]
 
 
-def generate_annotations(num_frames):
+def generate_annotations(num_frames: int) -> Dict[int, Dict[str, Any]]:
     frames = {}
     for frame in range(1, num_frames + 1):
         frames[frame] = {"tracks": generate_object_positions(frame)}
@@ -37,8 +38,11 @@ def generate_annotations(num_frames):
 
 
 def modify_tracks(
-    json_data, position_randomization=0.1, delete_probability=0.1, add_probability=0.1
-):
+    json_data: Dict[int, Dict[str, Any]],
+    position_randomization: float = 0.1,
+    delete_probability: float = 0.1,
+    add_probability: float = 0.1,
+) -> Dict[int, Dict[str, Any]]:
     new_data = {}
 
     for frame, frame_data in json_data.items():
@@ -73,7 +77,7 @@ def modify_tracks(
     return new_data
 
 
-def main():
+def main() -> None:
     num_frames = 100
     annotations_path = utilities.get_data_path() / "annotations.json"
     detections_path = utilities.get_data_path() / "detections.json"
