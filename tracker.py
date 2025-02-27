@@ -3,6 +3,8 @@ import numpy as np
 from enum import Enum
 from filterpy.kalman import KalmanFilter
 
+import utilities
+
 class TrackStage(Enum):
     INITIALIZED = 1
     CONFIRMED = 2
@@ -41,9 +43,9 @@ class Track:
         kf.H = np.array([[1,0,0,0,0,0],
                          [0,1,0,0,0,0],
                          [0,0,1,0,0,0]])
-        kf.R *= self.measurement_noise # Increase measurement noise
-        kf.P *= self.covariance  # Covariance matrix
-        kf.Q *= self.process_noise  # Process noise
+        kf.R *= self.measurement_noise
+        kf.P *= self.covariance
+        kf.Q *= self.process_noise
         kf.x[:3] = initial_position.reshape((3, 1))
         return kf
 
@@ -64,7 +66,6 @@ class Track:
         return f"Track {self.id}: {self.get_state()} | Stage: {self.stage}"
 
 class Tracker:
-    # def __init__(self, distance_threshold=5.0, max_age=3, min_hits=3):
     def __init__(self, settings):
         self.tracks = []
         self.track_id = 0
@@ -121,21 +122,6 @@ class Tracker:
     def get_tracks(self):
         return self.tracks
 
-    # def save_results(self, file_path):
-    #     with open(file_path, 'w') as json_file:
-    #         json.dump(self.results, json_file, indent=4)
-
-def load_json(file_path):
-    with open(file_path, 'r') as f:
-        data = json.load(f)
-    return data
-
-def save_to_json(data, file_path):
-    with open(file_path, 'w') as f:
-        json.dump(data, f, indent=4)
-
-# def run_tracker
-
 def run_tracker_with_parameters(tracker_settings, detections):
     tracker = Tracker(tracker_settings)
     output_data = {}
@@ -160,8 +146,12 @@ def run_tracker_with_parameters(tracker_settings, detections):
     return output_data
 
 def main():
-    detections = load_json('detections.json')
-    parameters = load_json('parameters.json')
+    parameters_path = utilities.get_data_path() / "parameters.json"
+    detections_path = utilities.get_data_path() / "detections.json"
+    tracked_path = utilities.get_data_path() / "tracked.json"
+
+    detections = utilities.load_json(detections_path)
+    parameters = utilities.load_json(parameters_path)
     tracker_settings = TrackSettings(
         measurement_noise=parameters["measurement_noise"],
         process_noise=parameters["process_noise"],
@@ -172,7 +162,7 @@ def main():
     )
     output_data = run_tracker_with_parameters(tracker_settings, detections)
 
-    save_to_json(output_data, 'tracked_objects.json')
+    utilities.save_json(tracked_path, output_data)
 
 if __name__ == "__main__":
     main()

@@ -3,6 +3,8 @@ import math
 import random
 import numpy as np
 
+import utilities
+
 def generate_object_positions(frame):
     return [
         {"id": 0, "x": 10 * math.sin(0.1 * frame), "y": 15 * math.cos(0.1 * frame), "z": 20 + 0.1 * frame},
@@ -46,15 +48,14 @@ def modify_tracks(json_data, position_randomization=0.1, delete_probability=0.1,
 
 def main():
     num_frames = 100
+    annotations_path = utilities.get_data_path() / "annotations.json"
+    detections_path = utilities.get_data_path() / "detections.json"
+
     annotations = generate_annotations(num_frames)
-    
-    with open('annotations.json', 'w') as json_file:
-        json.dump(annotations, json_file, indent=4)
-    
     detections = modify_tracks(annotations, position_randomization=0.5, delete_probability=0.4, add_probability=0.4)
 
-    with open('detections.json', 'w') as json_file:
-        json.dump(detections, json_file, indent=4)
+    utilities.save_json(annotations_path, annotations)
+    utilities.save_json(detections_path, detections)
 
 if __name__ == "__main__":
     main()

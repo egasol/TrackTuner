@@ -6,13 +6,11 @@ from itertools import cycle
 from time import time
 from pathlib import Path
 
+import utilities
+
 COLORS = cycle(['r', 'g', 'b', 'y', 'c', 'm', 'k'])
 COLOR_DEFAULT = 'b'
 
-def load_json_file(file_path):
-    with open(file_path, 'r') as file:
-        data = json.load(file)
-    return data
 
 def plot_tracks(ax, json_data, ignore_id):
     color_map = {}
@@ -30,15 +28,15 @@ def plot_tracks(ax, json_data, ignore_id):
 if __name__ == '__main__':
     input_files = [
         {
-            'filepath': Path('data/annotations.json'),
+            'filepath': utilities.get_data_path() / "annotations.json",
             'ignore_id': False
         },
         {
-            'filepath': Path('data/detections.json'),
+            'filepath': utilities.get_data_path() / "detections.json",
             'ignore_id': True
         },
         {
-            'filepath': Path('data/tracked_objects.json'),
+            'filepath': utilities.get_data_path() / "tracked.json",
             'ignore_id': False
         }
     ]
@@ -53,7 +51,7 @@ if __name__ == '__main__':
         filepath = input_settings['filepath']
         ignore_id = input_settings['ignore_id']
 
-        json_data = load_json_file(filepath)
+        json_data = utilities.load_json(filepath)
         plot_tracks(ax, json_data, ignore_id)
 
         ax.set_xlabel('X')
@@ -62,6 +60,6 @@ if __name__ == '__main__':
         ax.set_title(filepath.stem)
 
     plt.tight_layout()
-    plt.savefig('tracked_objects.png', dpi=50)
+    plt.savefig(utilities.get_media_path() / 'comparison.png', dpi=50)
 
     print('Creating plots took', time() - t0, 'seconds')

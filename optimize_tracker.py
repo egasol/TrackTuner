@@ -2,10 +2,11 @@ import json
 import numpy as np
 import optuna
 from pathlib import Path
-from tracker import Tracker, TrackSettings, load_json, run_tracker_with_parameters
-from evaluate_tracker import process_data, Statistics
+from optuna.visualization import plot_optimization_history
 
-PARAMETER_FILE = Path("parameters.json")
+from tracker import Tracker, TrackSettings, run_tracker_with_parameters
+from evaluate_tracker import process_data, Statistics
+import utilities
 
 def evaluate_tracker_performance(annotations, tracks):  
     stats = process_data(annotations, tracks)
@@ -21,24 +22,20 @@ def objective(trial):
         min_hits=trial.suggest_int('min_hits', 1, 10)
     )
 
-    detections = load_json('detections.json')
-    annotations = load_json('annotations.json')
+    detections = utilities.load_json(utilities.get_data_path() / 'detections.json')
+    annotations = utilities.load_json(utilities.get_data_path() / 'annotations.json')
 
     tracks = run_tracker_with_parameters(tracker_settings, detections)
 
     return evaluate_tracker_performance(annotations, tracks)
 
-def save_parameters(study):
-    with open(PARAMETER_FILE, "w") as f:
-        json.dump(study.best_params, f, indent=4)
-
 def main():
     study = optuna.create_study(direction='minimize')
     study.optimize(objective, n_trials=100)
 
-    print(f"Best Settings: {study.best_params}")
-    print(f"Best Performance Metric: {study.best_value}")
-    save_parameters(study)
+    parameters_path = utilities.get_data_path() / "parameters.json"
+
+    utilities.save_json(parameters_path, study.best_params)
 
 if __name__ == "__main__":
     main()
