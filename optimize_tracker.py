@@ -22,10 +22,11 @@ def objective(trial):
     )
 
     detections = load_json('detections.json')
+    annotations = load_json('annotations.json')
 
     tracks = run_tracker_with_parameters(tracker_settings, detections)
 
-    return evaluate_tracker_performance(detections, tracks)
+    return evaluate_tracker_performance(annotations, tracks)
 
 def save_parameters(study):
     with open(PARAMETER_FILE, "w") as f:
@@ -33,7 +34,7 @@ def save_parameters(study):
 
 def main():
     study = optuna.create_study(direction='minimize')
-    study.optimize(objective, n_trials=1)
+    study.optimize(objective, n_trials=100)
 
     print(f"Best Settings: {study.best_params}")
     print(f"Best Performance Metric: {study.best_value}")

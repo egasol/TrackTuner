@@ -54,7 +54,7 @@ class Statistics:
             stats['tracked_percentage'] = tracked_percentage
 
     def get_performance_metric(self):
-        alpha = 1
+        alpha = 10
         beta = 1
         gamma = 0.5
 
