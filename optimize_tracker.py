@@ -22,7 +22,7 @@ def objective(trial: optuna.trial.Trial) -> float:
         measurement_noise=trial.suggest_float("measurement_noise", 0.1, 5.0),
         process_noise=trial.suggest_float("process_noise", 0.0001, 0.1),
         covariance=trial.suggest_float("covariance", 1.0, 20.0),
-        distance_threshold=trial.suggest_float("distance_threshold", 2.0, 10.0),
+        distance_threshold=trial.suggest_float("distance_threshold", 0.01, 20.0),
         max_age=trial.suggest_int("max_age", 1, 10),
         min_hits=trial.suggest_int("min_hits", 1, 10),
     )

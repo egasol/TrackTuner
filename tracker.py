@@ -3,6 +3,7 @@ import numpy as np
 from enum import Enum
 from filterpy.kalman import KalmanFilter
 from typing import Any, Dict, List, Tuple
+from scipy.optimize import linear_sum_assignment
 import utilities
 
 
@@ -37,7 +38,6 @@ class Track:
         self.covariance = settings.covariance
         self.process_noise = settings.process_noise
         self.id = id
-        self.position = initial_position
         self.kf = self.initialize_kalman_filter(initial_position)
         self.stage = TrackStage.INITIALIZED
         self.age = 0
@@ -64,9 +64,10 @@ class Track:
         kf.x[:3] = initial_position.reshape((3, 1))
         return kf
 
-    def predict(self) -> None:
+    def predict(self) -> np.ndarray:
         self.kf.predict()
         self.age += 1
+        return self.kf.x
 
     def update(self, measurement: np.ndarray) -> None:
         self.kf.update(measurement)
@@ -97,24 +98,31 @@ class Tracker:
         unassigned_tracks: List[int] = list(range(len(self.tracks)))
         assigned_detections: List[int] = []
 
-        for i, track in enumerate(self.tracks):
-            min_distance = float("inf")
-            best_match = -1
-            for j, detection in enumerate(detections):
-                if j in assigned_detections:
-                    continue
-                distance = np.linalg.norm(track.get_state() - detection)
-                if distance < min_distance and distance < self.distance_threshold:
-                    min_distance = distance
-                    best_match = j
-            if best_match != -1:
-                track.update(detections[best_match])
-                assigned_tracks.append(i)
-                assigned_detections.append(best_match)
+        if len(detections) == 0:
+            return assigned_tracks, unassigned_tracks, list(range(len(detections)))
 
-        unassigned_detections: List[int] = [
+        cost_matrix = np.zeros((len(self.tracks), len(detections)))
+
+        for i, track in enumerate(self.tracks):
+            predicted_state = track.predict()[:3].flatten()
+            for j, detection in enumerate(detections):
+                cost_matrix[i, j] = np.linalg.norm(predicted_state - detection)
+
+        track_indices, detection_indices = linear_sum_assignment(cost_matrix)
+
+        for track_index, detection_index in zip(track_indices, detection_indices):
+            if cost_matrix[track_index, detection_index] < self.distance_threshold:
+                self.tracks[track_index].update(detections[detection_index])
+                assigned_tracks.append(track_index)
+                assigned_detections.append(detection_index)
+
+        unassigned_tracks = [
+            i for i in range(len(self.tracks)) if i not in assigned_tracks
+        ]
+        unassigned_detections = [
             i for i in range(len(detections)) if i not in assigned_detections
         ]
+
         return assigned_tracks, unassigned_tracks, unassigned_detections
 
     def predict_tracks(self) -> None:
