@@ -1,5 +1,6 @@
 import json
 import numpy as np
+import statistics
 from typing import Any, Dict, Set
 
 import utilities
@@ -79,6 +80,17 @@ class Statistics:
         performance_metric += gamma * self.false_positives
         return performance_metric
 
+    def get_performance_multi_metric(self) -> (float, float, int):
+        tracked_percentages = (
+            stats["tracked_percentage"] for stats in self.annotation_stats.values()
+        )
+        id_switches = (stats["id_switches"] for stats in self.annotation_stats.values())
+
+        average_tracked_percentage = statistics.mean(tracked_percentages)
+        average_id_switches = statistics.mean(id_switches)
+
+        return average_tracked_percentage, average_id_switches, self.false_positives
+
     def print_statistics(self) -> None:
         print("Tracking Performance Statistics:")
         print("Annotations:")
@@ -105,13 +117,12 @@ def process_data(annotations: Dict[str, Any], tracks: Dict[str, Any]) -> Statist
     stats = Statistics()
 
     for frame, annotation in annotations.items():
+        tracked_objs: Set[int] = set()
         for obj in annotation["tracks"]:
             obj_id = obj["id"]
             obj_position = np.array([obj["x"], obj["y"], obj["z"]])
             stats.add_annotation(frame, obj_id, obj_position)
 
-            associated_track_id = None
-            tracked_objs: Set[int] = set()
             for track in tracks.get(frame, {}).get("tracks", []):
                 track_id = track["id"]
                 track_position = np.array([track["x"], track["y"], track["z"]])
@@ -120,9 +131,9 @@ def process_data(annotations: Dict[str, Any], tracks: Dict[str, Any]) -> Statist
                 ):
                     tracked_objs.add(track_id)
 
-            for track in tracks.get(frame, {}).get("tracks", []):
-                if track["id"] not in tracked_objs:
-                    stats.update_false_positives(track["id"])
+        for track in tracks.get(frame, {}).get("tracks", []):
+            if track["id"] not in tracked_objs:
+                stats.update_false_positives(track["id"])
 
     stats.calculate_statistics()
     return stats
@@ -135,6 +146,7 @@ def main() -> None:
     stats = process_data(annotations, tracked)
     stats.print_statistics()
     print("performance_metric:", stats.get_performance_metric())
+    print("performance_multi_metrics:", stats.get_performance_multi_metric())
 
 
 if __name__ == "__main__":
