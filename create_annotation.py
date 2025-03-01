@@ -63,7 +63,9 @@ def modify_tracks(
             )
             new_tracks.append(new_track)
 
-        if random.random() < add_probability:
+        num_new_tracks = np.random.poisson(add_probability)
+
+        for _ in range(num_new_tracks):
             new_track = {
                 "id": max([t["id"] for t in new_tracks] + [-1]) + 1,
                 "x": np.random.uniform(-15, 15),
@@ -87,7 +89,7 @@ def main() -> None:
         annotations,
         position_randomization=0.5,
         delete_probability=0.4,
-        add_probability=0.4,
+        add_probability=1.4,
     )
 
     utilities.save_json(annotations_path, annotations)
