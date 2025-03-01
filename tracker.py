@@ -32,20 +32,26 @@ class TrackSettings:
 
 class Track:
     def __init__(
-        self, id: int, initial_position: np.ndarray, settings: TrackSettings
+        self,
+        id: int,
+        initial_position: np.ndarray,
+        initial_velocity: np.ndarray,
+        settings: TrackSettings,
     ) -> None:
         self.measurement_noise = settings.measurement_noise
         self.covariance = settings.covariance
         self.process_noise = settings.process_noise
         self.id = id
-        self.kf = self.initialize_kalman_filter(initial_position)
+        self.kf = self.initialize_kalman_filter(initial_position, initial_velocity)
         self.stage = TrackStage.INITIALIZED
         self.age = 0
         self.hits = 1
         self.hit_streak = 0
         self.time_since_update = 0
 
-    def initialize_kalman_filter(self, initial_position: np.ndarray) -> KalmanFilter:
+    def initialize_kalman_filter(
+        self, initial_position: np.ndarray, initial_velocity: np.ndarray
+    ) -> KalmanFilter:
         kf = KalmanFilter(dim_x=6, dim_z=3)
         kf.F = np.array(
             [
@@ -62,6 +68,7 @@ class Track:
         kf.P *= self.covariance
         kf.Q *= self.process_noise
         kf.x[:3] = initial_position.reshape((3, 1))
+        kf.x[3:] = initial_velocity.reshape((3, 1))
         return kf
 
     def predict(self) -> np.ndarray:
@@ -78,8 +85,11 @@ class Track:
     def get_state(self) -> np.ndarray:
         return self.kf.x[:3].reshape((3,))
 
+    def get_velocity(self) -> np.ndarray:
+        return self.kf.x[3:].reshape((3,))
+
     def __repr__(self) -> str:
-        return f"Track {self.id}: {self.get_state()} | Stage: {self.stage}"
+        return f"Track {self.id}: {self.get_state()} | Velocity: {self.get_velocity()} | Stage: {self.stage}"
 
 
 class Tracker:
@@ -135,7 +145,10 @@ class Tracker:
         )
 
         for i in unassigned_detections:
-            self.tracks.append(Track(self.track_id, detections[i], self.settings))
+            initial_velocity = np.zeros(3)
+            self.tracks.append(
+                Track(self.track_id, detections[i], initial_velocity, self.settings)
+            )
             self.track_id += 1
 
         for i in reversed(unassigned_tracks):
@@ -176,6 +189,9 @@ def run_tracker_with_parameters(
                         "x": track.get_state()[0],
                         "y": track.get_state()[1],
                         "z": track.get_state()[2],
+                        "vx": track.get_velocity()[0],
+                        "vy": track.get_velocity()[1],
+                        "vz": track.get_velocity()[2],
                     }
                 )
 
