@@ -8,9 +8,6 @@ from pathlib import Path
 from typing import Dict, Any
 import utilities
 
-COLORS = cycle(["r", "g", "b", "y", "c", "m", "k"])
-COLOR_DEFAULT = "b"
-
 
 class VisualizerInput:
     def __init__(self, filepath: Path, ignore_id: bool = False):
@@ -22,23 +19,51 @@ class Visualizer:
     def __init__(self, input_files: list[VisualizerInput]):
         self.input_files = input_files
         self.color_map = {}
+        self.alpha_min = 0.05
+        self.alpha_max = 1.00
+        self.colors = cycle(["r", "g", "b", "y", "c", "m", "k"])
+        self.color_default = "b"
 
-    def load_data(self, filepath: Path) -> Dict[str, Any]:
+    def _load_data(self, filepath: Path) -> Dict[str, Any]:
         return utilities.load_json(filepath)
 
-    def plot_tracks(
-        self, ax: Axes3D, json_data: Dict[str, Any], ignore_id: bool
+    def _plot_tracks(
+        self,
+        ax: Axes3D,
+        json_data: Dict[str, Any],
     ) -> None:
-        for frame, frame_data in json_data.items():
+        track_points = {}
+
+        for frame_data in json_data.values():
             for track in frame_data["tracks"]:
-                if not ignore_id:
-                    track_id = track["id"]
-                    if track_id not in self.color_map:
-                        self.color_map[track_id] = next(COLORS)
-                    color = self.color_map[track_id]
-                else:
-                    color = "b"
-                ax.scatter(track["x"], track["y"], track["z"], color=color)
+                track_id = track.get("id")
+                if track_id not in track_points:
+                    track_points[track_id] = {"x": [], "y": [], "z": []}
+                track_points[track_id]["x"].append(track["x"])
+                track_points[track_id]["y"].append(track["y"])
+                track_points[track_id]["z"].append(track["z"])
+
+        for track_id, points in track_points.items():
+            if track_id not in self.color_map:
+                self.color_map[track_id] = next(self.colors)
+            color = self.color_map[track_id]
+
+            ax.plot(points["x"], points["y"], points["z"], color=color)
+
+    def _plot_tracks_scatter(self, ax: Axes3D, json_data: Dict[str, Any]) -> None:
+        track_data_by_id = {}
+
+        max_frame = max(map(int, json_data.keys()))
+        for frame_str, frame_data in json_data.items():
+            frame = int(frame_str)
+            alpha = self.alpha_min + (frame / max_frame) * (
+                self.alpha_max - self.alpha_min
+            )
+
+            for track in frame_data["tracks"]:
+                x, y, z = track["x"], track["y"], track["z"]
+
+                ax.scatter(x, y, z, color=self.color_default, alpha=alpha)
 
     def visualize(self, output: Path) -> None:
         t0 = time()
@@ -47,16 +72,17 @@ class Visualizer:
 
         for i, input_settings in enumerate(self.input_files):
             ax = fig.add_subplot(1, num_files, i + 1, projection="3d")
-            filepath = input_settings.filepath
-            ignore_id = input_settings.ignore_id
 
-            json_data = self.load_data(filepath)
-            self.plot_tracks(ax, json_data, ignore_id)
+            json_data = self._load_data(input_settings.filepath)
+            if input_settings.ignore_id:
+                self._plot_tracks_scatter(ax, json_data)
+            else:
+                self._plot_tracks(ax, json_data)
 
             ax.set_xlabel("X")
             ax.set_ylabel("Y")
             ax.set_zlabel("Z")
-            ax.set_title(filepath.stem)
+            ax.set_title(input_settings.filepath.stem)
 
         plt.tight_layout()
         plt.savefig(output, dpi=50)
