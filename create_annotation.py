@@ -3,7 +3,7 @@ import math
 import random
 import numpy as np
 from typing import List, Tuple, Dict
-from datatypes.reference import Reference
+from datatypes.reference import Reference, ReferenceTrack
 from datatypes.detection import Detection
 
 import utilities
@@ -13,45 +13,45 @@ class TrackGenerator:
     def __init__(
         self,
         num_frames: int,
+        num_tracks: 5,
         position_randomization: float = 0.1,
         delete_probability: float = 0.1,
         add_probability: float = 0.1,
     ):
         self.num_frames = num_frames
+        self.num_tracks = num_tracks
         self.position_randomization = position_randomization
         self.delete_probability = delete_probability
         self.add_probability = add_probability
+
         self.annotations = self.generate_annotations()
         self.min_max_ranges = self.get_min_max_ranges()
 
-    @staticmethod
-    def generate_object_positions(frame: int) -> List[Reference]:
-        return [
-            Reference(
-                id=0,
-                x=10 * math.sin(0.1 * frame),
-                y=15 * math.cos(0.1 * frame),
-                z=20 + 0.1 * frame,
-            ),
-            Reference(
-                id=1,
-                x=-10 * math.cos(0.1 * frame),
-                y=-15 * math.sin(0.1 * frame),
-                z=10 * math.sin(0.1 * frame),
-            ),
-            Reference(
-                id=2,
-                x=10 * math.cos(0.1 * frame),
-                y=15 - 0.5 * frame,
-                z=-20 * math.sin(0.1 * frame),
-            ),
-        ]
+    def _generate_track_ranges(self) -> Dict[int, Tuple[int, int]]:
+        track_ranges = {}
+        for i in range(self.num_tracks):
+            start_frame = random.randint(0, self.num_frames - 21)
+            end_frame = random.randint(start_frame + 20, self.num_frames)
+            track_ranges[i] = (start_frame, end_frame)
+        return track_ranges
 
     def generate_annotations(self) -> Dict[int, List[Reference]]:
-        frames = {}
-        for frame in range(1, self.num_frames + 1):
-            frames[frame] = self.generate_object_positions(frame)
-        return frames
+        track_ranges = self._generate_track_ranges()
+        annotations = {frame: [] for frame in range(1, self.num_frames + 1)}
+
+        for track_id, (start_frame, end_frame) in track_ranges.items():
+            initial_x = random.uniform(-10, 10)
+            initial_y = random.uniform(-10, 10)
+            initial_z = random.uniform(-10, 10)
+            track = ReferenceTrack(
+                track_id, initial_x, initial_y, initial_z, start_frame, end_frame
+            )
+            track_positions = track.generate()
+
+            for frame, reference in track_positions.items():
+                annotations[frame].append(reference)
+
+        return annotations
 
     def get_min_max_ranges(self) -> Dict[str, Tuple[float, float]]:
         x_values, y_values, z_values = [], [], []
@@ -136,6 +136,7 @@ class TrackGenerator:
 def main() -> None:
     track_generator = TrackGenerator(
         num_frames=100,
+        num_tracks=5,
         position_randomization=0.5,
         delete_probability=0.4,
         add_probability=1.4,
