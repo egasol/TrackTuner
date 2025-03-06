@@ -19,12 +19,13 @@ def evaluate_tracker_performance(
 
 def objective(trial: optuna.trial.Trial) -> float:
     tracker_settings = TrackSettings(
-        measurement_noise=trial.suggest_float("measurement_noise", 0.1, 5.0),
+        measurement_noise=trial.suggest_float("measurement_noise", 0.001, 10.0),
         process_noise=trial.suggest_float("process_noise", 0.0001, 0.1),
-        covariance=trial.suggest_float("covariance", 1.0, 20.0),
+        covariance=trial.suggest_float("covariance", 0.001, 20.0),
         distance_threshold=trial.suggest_float("distance_threshold", 0.01, 20.0),
         max_age=trial.suggest_int("max_age", 1, 10),
         min_hits=trial.suggest_int("min_hits", 1, 10),
+        max_consecutive_misses=trial.suggest_int("max_consecutive_misses", 1, 10),
     )
 
     detections = utilities.load_json(utilities.get_data_path() / "detections.json")
