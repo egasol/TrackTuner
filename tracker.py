@@ -21,6 +21,7 @@ class TrackSettings:
         distance_threshold: float,
         max_age: int,
         min_hits: int,
+        max_consecutive_misses: int,
     ) -> None:
         self.measurement_noise = measurement_noise
         self.process_noise = process_noise
@@ -28,6 +29,7 @@ class TrackSettings:
         self.distance_threshold = distance_threshold
         self.max_age = max_age
         self.min_hits = min_hits
+        self.max_consecutive_misses = max_consecutive_misses
 
 
 class Track:
@@ -36,44 +38,63 @@ class Track:
         id: int,
         initial_position: np.ndarray,
         initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray,
         settings: TrackSettings,
     ) -> None:
         self.measurement_noise = settings.measurement_noise
         self.covariance = settings.covariance
         self.process_noise = settings.process_noise
         self.id = id
-        self.kf = self.initialize_kalman_filter(initial_position, initial_velocity)
+        self.kf = self.initialize_kalman_filter(
+            initial_position, initial_velocity, initial_acceleration
+        )
         self.stage = TrackStage.INITIALIZED
         self.age = 0
         self.hits = 1
         self.hit_streak = 0
         self.time_since_update = 0
+        self.consecutive_misses = 0
+        self.position_history = [initial_position]
 
     def initialize_kalman_filter(
-        self, initial_position: np.ndarray, initial_velocity: np.ndarray
+        self,
+        initial_position: np.ndarray,
+        initial_velocity: np.ndarray,
+        initial_acceleration: np.ndarray,
     ) -> KalmanFilter:
-        kf = KalmanFilter(dim_x=6, dim_z=3)
+        kf = KalmanFilter(dim_x=9, dim_z=3)
         kf.F = np.array(
             [
-                [1, 0, 0, 1, 0, 0],
-                [0, 1, 0, 0, 1, 0],
-                [0, 0, 1, 0, 0, 1],
-                [0, 0, 0, 1, 0, 0],
-                [0, 0, 0, 0, 1, 0],
-                [0, 0, 0, 0, 0, 1],
+                [1, 0, 0, 1, 0, 0, 0.5, 0, 0],
+                [0, 1, 0, 0, 1, 0, 0, 0.5, 0],
+                [0, 0, 1, 0, 0, 1, 0, 0, 0.5],
+                [0, 0, 0, 1, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 1, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 1, 0, 0, 1],
+                [0, 0, 0, 0, 0, 0, 1, 0, 0],
+                [0, 0, 0, 0, 0, 0, 0, 1, 0],
+                [0, 0, 0, 0, 0, 0, 0, 0, 1],
             ]
         )
-        kf.H = np.array([[1, 0, 0, 0, 0, 0], [0, 1, 0, 0, 0, 0], [0, 0, 1, 0, 0, 0]])
+        kf.H = np.array(
+            [
+                [1, 0, 0, 0, 0, 0, 0, 0, 0],
+                [0, 1, 0, 0, 0, 0, 0, 0, 0],
+                [0, 0, 1, 0, 0, 0, 0, 0, 0],
+            ]
+        )
         kf.R *= self.measurement_noise
         kf.P *= self.covariance
         kf.Q *= self.process_noise
         kf.x[:3] = initial_position.reshape((3, 1))
-        kf.x[3:] = initial_velocity.reshape((3, 1))
+        kf.x[3:6] = initial_velocity.reshape((3, 1))
+        kf.x[6:] = initial_acceleration.reshape((3, 1))
         return kf
 
     def predict(self) -> np.ndarray:
         self.kf.predict()
         self.age += 1
+        self.consecutive_misses += 1
         return self.kf.x
 
     def update(self, measurement: np.ndarray) -> None:
@@ -81,15 +102,25 @@ class Track:
         self.time_since_update = 0
         self.hits += 1
         self.hit_streak += 1
+        self.consecutive_misses = 0
+        self.position_history.append(measurement)
+        if len(self.position_history) > 5:
+            self.position_history.pop(0)
 
     def get_state(self) -> np.ndarray:
         return self.kf.x[:3].reshape((3,))
 
     def get_velocity(self) -> np.ndarray:
-        return self.kf.x[3:].reshape((3,))
+        return self.kf.x[3:6].reshape((3,))
+
+    def get_acceleration(self) -> np.ndarray:
+        return self.kf.x[6:].reshape((3,))
+
+    def get_smoothed_position(self) -> np.ndarray:
+        return np.mean(self.position_history, axis=0)
 
     def __repr__(self) -> str:
-        return f"Track {self.id}: {self.get_state()} | Velocity: {self.get_velocity()} | Stage: {self.stage}"
+        return f"Track {self.id}: {self.get_state()} | Velocity: {self.get_velocity()} | Acceleration: {self.get_acceleration()} | Stage: {self.stage}"
 
 
 class Tracker:
@@ -99,6 +130,7 @@ class Tracker:
         self.distance_threshold = settings.distance_threshold
         self.max_age = settings.max_age
         self.min_hits = settings.min_hits
+        self.max_consecutive_misses = settings.max_consecutive_misses
         self.settings = settings
 
     def associate_detections_to_tracks(
@@ -146,14 +178,24 @@ class Tracker:
 
         for i in unassigned_detections:
             initial_velocity = np.zeros(3)
+            initial_acceleration = np.zeros(3)
             self.tracks.append(
-                Track(self.track_id, detections[i], initial_velocity, self.settings)
+                Track(
+                    self.track_id,
+                    detections[i],
+                    initial_velocity,
+                    initial_acceleration,
+                    self.settings,
+                )
             )
             self.track_id += 1
 
         for i in reversed(unassigned_tracks):
             self.tracks[i].time_since_update += 1
-            if self.tracks[i].time_since_update > self.max_age:
+            if (
+                self.tracks[i].time_since_update > self.max_age
+                or self.tracks[i].consecutive_misses > self.max_consecutive_misses
+            ):
                 self.tracks.pop(i)
 
         for track in self.tracks:
@@ -186,12 +228,15 @@ def run_tracker_with_parameters(
                 frame_tracks.append(
                     {
                         "id": track.id,
-                        "x": track.get_state()[0],
-                        "y": track.get_state()[1],
-                        "z": track.get_state()[2],
+                        "x": track.get_smoothed_position()[0],
+                        "y": track.get_smoothed_position()[1],
+                        "z": track.get_smoothed_position()[2],
                         "vx": track.get_velocity()[0],
                         "vy": track.get_velocity()[1],
                         "vz": track.get_velocity()[2],
+                        "ax": track.get_acceleration()[0],
+                        "ay": track.get_acceleration()[1],
+                        "az": track.get_acceleration()[2],
                     }
                 )
 
@@ -213,6 +258,7 @@ def main() -> None:
         distance_threshold=parameters["distance_threshold"],
         max_age=parameters["max_age"],
         min_hits=parameters["min_hits"],
+        max_consecutive_misses=parameters["max_consecutive_misses"],  # New parameter
     )
     output_data = run_tracker_with_parameters(tracker_settings, detections)
 
