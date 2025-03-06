@@ -84,7 +84,6 @@ class Visualizer:
             ax.set_zlabel("Z")
             ax.set_title(input_settings.filepath.stem)
 
-        plt.tight_layout()
         plt.savefig(output, dpi=50)
         print("Summarizing plots to", output, f"({time() - t0:.2f}s)")
 
