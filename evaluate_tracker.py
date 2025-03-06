@@ -66,18 +66,22 @@ class Statistics:
             stats["tracked_percentage"] = tracked_percentage
 
     def get_performance_metric(self) -> float:
-        alpha = 1
-        beta = 1
-        gamma = 0.5
+        alpha = -5
+        beta = 10
+        gamma = 3.5
 
-        performance_metric = 0.0
-        for obj_id, stats in self.annotation_stats.items():
-            tracked_percentage = stats["tracked_percentage"]
-            id_switches = stats["id_switches"]
-            loss = alpha * (1 - tracked_percentage) + beta * id_switches
-            performance_metric += loss
+        tracked_percentage = statistics.mean(
+            [stats["tracked_percentage"] for stats in self.annotation_stats.values()]
+        )
+        id_switches = statistics.mean(
+            [stats["id_switches"] for stats in self.annotation_stats.values()]
+        )
 
-        performance_metric += gamma * self.false_positives
+        performance_metric = (
+            alpha * tracked_percentage
+            + beta * id_switches
+            + gamma * self.false_positives
+        )
         return performance_metric
 
     def get_performance_multi_metric(self) -> (float, float, int):
