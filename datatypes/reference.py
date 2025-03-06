@@ -24,7 +24,7 @@ class ReferenceTrack:
         start_frame: int,
         end_frame: int,
         mod_min: float = 0.10,
-        mod_max: float = 0.80,
+        mod_max: float = 0.40,
     ):
         self.id = id
         self.start_x = x
@@ -33,9 +33,9 @@ class ReferenceTrack:
         self.start_frame = start_frame
         self.end_frame = end_frame
 
-        self.func_x = random.choice([math.sin, math.cos, lambda x: x])
-        self.func_y = random.choice([math.sin, math.cos, lambda x: x])
-        self.func_z = random.choice([math.sin, math.cos, lambda x: 10 * x])
+        self.func_x = random.choice([math.sin, math.cos, lambda x: 0.20 * x])
+        self.func_y = random.choice([math.sin, math.cos, lambda y: 0.20 * y])
+        self.func_z = random.choice([math.sin, math.cos, lambda z: 0.20 * z])
 
         self.mod_x = random.uniform(mod_min, mod_max)
         self.mod_y = random.uniform(mod_min, mod_max)
