@@ -26,12 +26,15 @@ class TrackGenerator:
 
         self.annotations = self.generate_annotations()
         self.min_max_ranges = self.get_min_max_ranges()
+        self.min_track_length = 20
 
     def _generate_track_ranges(self) -> Dict[int, Tuple[int, int]]:
         track_ranges = {}
         for i in range(self.num_tracks):
-            start_frame = random.randint(0, self.num_frames - 21)
-            end_frame = random.randint(start_frame + 20, self.num_frames)
+            start_frame = random.randint(1, self.num_frames - self.min_track_length + 1)
+            end_frame = random.randint(
+                start_frame + self.min_track_length, self.num_frames
+            )
             track_ranges[i] = (start_frame, end_frame)
         return track_ranges
 
