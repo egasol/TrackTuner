@@ -24,9 +24,9 @@ class TrackGenerator:
         self.delete_probability = delete_probability
         self.add_probability = add_probability
 
+        self.min_track_length = 20
         self.annotations = self.generate_annotations()
         self.min_max_ranges = self.get_min_max_ranges()
-        self.min_track_length = 20
 
     def _generate_track_ranges(self) -> Dict[int, Tuple[int, int]]:
         track_ranges = {}
