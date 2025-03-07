@@ -98,23 +98,6 @@ def test_tracker_associate_detections_to_tracks(
     assert unassigned_detections == []
 
 
-# def test_tracker_update_tracks(track_settings, initial_position, initial_velocity, initial_acceleration):
-# 	tracker = Tracker(track_settings)
-# 	detections = [initial_position]
-# 	tracker.update_tracks(detections)
-# 	assert len(tracker.tracks) == 1
-# 	assert tracker.tracks[0].get_state().tolist() == initial_position.tolist()
-# 	detections = [np.array([1.0, 1.0, 1.0])]
-# 	tracker.update_tracks(detections)
-# 	assert len(tracker.tracks) == 1
-# 	state_after_second_update = tracker.tracks[0].get_state()
-
-# 	# Ensure the state has moved closer to the new detection
-# 	assert np.linalg.norm(state_after_second_update - new_detection) <
-# 	# assert tracker.tracks[0].get_state().tolist() == detections[0].tolist()
-# 	# assert tracker.
-
-
 def test_tracker_update_tracks(
     track_settings, initial_position, initial_velocity, initial_acceleration
 ):
@@ -124,17 +107,14 @@ def test_tracker_update_tracks(
 
     assert len(tracker.tracks) == 1
 
-    # Initial update, state should be close to the initial position
     state_after_first_update = tracker.tracks[0].get_state()
     assert np.allclose(state_after_first_update, initial_position, atol=1e-1)
 
-    # Introduce a new detection and update tracks
     new_detection = np.array([1.0, 1.0, 1.0])
     tracker.update_tracks([new_detection])
 
     state_after_second_update = tracker.tracks[0].get_state()
 
-    # Ensure the state has moved closer to the new detection
     assert np.linalg.norm(state_after_second_update - new_detection) < np.linalg.norm(
         state_after_first_update - new_detection
     )
