@@ -6,13 +6,11 @@ from optuna.visualization import plot_optimization_history, plot_param_importanc
 from typing import Any, Dict
 
 from tracker import Tracker, TrackSettings, run_tracker_with_parameters
-from evaluate_tracker import process_data, Statistics
+from evaluator import process_data, Statistics
 import utilities
 
 
-def evaluate_tracker_performance(
-    annotations: Dict[str, Any], tracks: Dict[str, Any]
-) -> float:
+def evaluator_performance(annotations: Dict[str, Any], tracks: Dict[str, Any]) -> float:
     stats = process_data(annotations, tracks)
     return stats.get_performance_metric()
 
@@ -33,7 +31,7 @@ def objective(trial: optuna.trial.Trial) -> float:
 
     tracks = run_tracker_with_parameters(tracker_settings, detections)
 
-    return evaluate_tracker_performance(annotations, tracks)
+    return evaluator_performance(annotations, tracks)
 
 
 def main() -> None:

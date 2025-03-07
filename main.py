@@ -1,11 +1,11 @@
 import optuna
 import random
 
-import create_annotation
-import optimize_tracker
+import annotator
+import optimizer
 import tracker
 import utilities
-import visualize_objects
+from visualizer import Visualizer, VisualizerInput
 
 if __name__ == "__main__":
     annotations_path = utilities.get_data_path() / "annotations.json"
@@ -16,18 +16,18 @@ if __name__ == "__main__":
     random.seed(42)
 
     # Generate annotations and detections
-    track_generator = create_annotation.TrackGenerator(
+    track_generator = annotator.TrackGenerator(
         num_frames=100,
         num_tracks=3,
         position_randomization=0.05,
         delete_probability=0.14,
-        add_probability=1.12,
+        add_probability=4.82,
     )
     track_generator.save_data()
 
     # Optimize parameters
     study = optuna.create_study(direction="minimize")
-    study.optimize(optimize_tracker.objective, n_trials=200)
+    study.optimize(optimizer.objective, n_trials=200)
     utilities.save_json(parameters_path, study.best_params)
 
     # Run tracker on optimized parameters
@@ -45,11 +45,11 @@ if __name__ == "__main__":
     utilities.save_json(tracked_path, output_data)
 
     # Visualize results
-    visualizer = visualize_objects.Visualizer(
+    visualizer = Visualizer(
         [
-            visualize_objects.VisualizerInput(annotations_path),
-            visualize_objects.VisualizerInput(detections_path, ignore_id=True),
-            visualize_objects.VisualizerInput(tracked_path),
+            VisualizerInput(annotations_path),
+            VisualizerInput(detections_path, ignore_id=True),
+            VisualizerInput(tracked_path),
         ]
     )
     visualizer.visualize(utilities.get_media_path() / "comparison.png")
