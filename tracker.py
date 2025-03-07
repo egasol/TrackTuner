@@ -258,7 +258,7 @@ def main() -> None:
         distance_threshold=parameters["distance_threshold"],
         max_age=parameters["max_age"],
         min_hits=parameters["min_hits"],
-        max_consecutive_misses=parameters["max_consecutive_misses"],  # New parameter
+        max_consecutive_misses=parameters["max_consecutive_misses"],
     )
     output_data = run_tracker_with_parameters(tracker_settings, detections)
 
