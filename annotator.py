@@ -31,7 +31,9 @@ class TrackGenerator:
     def _generate_track_ranges(self) -> Dict[int, Tuple[int, int]]:
         track_ranges = {}
         for i in range(self.num_tracks):
-            start_frame = random.randint(1, self.num_frames - self.min_track_length + 1)
+            start_frame = random.randint(
+                1, self.num_frames - (self.min_track_length + 1)
+            )
             end_frame = random.randint(
                 start_frame + self.min_track_length, self.num_frames
             )
