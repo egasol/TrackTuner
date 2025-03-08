@@ -2,11 +2,13 @@ import json
 import math
 import random
 import numpy as np
+import argparse
+from pathlib import Path
 from typing import List, Tuple, Dict
+
 from datatypes.reference import Reference, ReferenceTrack
 from datatypes.detection import Detection
-
-import utilities
+from utilities import get_data_path, save_json
 
 
 class TrackGenerator:
@@ -116,20 +118,20 @@ class TrackGenerator:
 
         return new_data
 
-    def save_data(self) -> None:
-        annotations_path = utilities.get_data_path() / "annotations.json"
-        detections_path = utilities.get_data_path() / "detections.json"
+    def save_data(self, output_folder: Path) -> None:
+        annotations_path = output_folder / "annotations.json"
+        detections_path = output_folder / "detections.json"
 
         detections = self.modify_tracks()
 
-        utilities.save_json(
+        save_json(
             annotations_path,
             {
                 frame: {"tracks": [ref.to_dict() for ref in ref_list]}
                 for frame, ref_list in self.annotations.items()
             },
         )
-        utilities.save_json(
+        save_json(
             detections_path,
             {
                 frame: {"tracks": [det.to_dict() for det in det_list]}
@@ -138,16 +140,54 @@ class TrackGenerator:
         )
 
 
-def main() -> None:
-    track_generator = TrackGenerator(
-        num_frames=100,
-        num_tracks=5,
-        position_randomization=0.5,
-        delete_probability=0.4,
-        add_probability=1.4,
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Generation of syntethic references and detections."
     )
 
-    track_generator.save_data()
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Output folder to store references and detections.",
+    )
+    parser.add_argument("--num-frames", type=int, help="Number of frames.")
+    parser.add_argument(
+        "--num-tracks", type=int, help="Number of reference tracks create."
+    )
+    parser.add_argument(
+        "--position-randomize",
+        type=float,
+        default=0.125,
+        help="Randomization of position for detections. (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--delete-probability",
+        type=float,
+        default=0.18,
+        help="Delete probability of detections. (FNr) (default: %(default)s)",
+    )
+    parser.add_argument(
+        "--add-probability",
+        type=float,
+        default=1.42,
+        help="Add probability of false detections. (framewise FPr) (default: %(default)s)",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    track_generator = TrackGenerator(
+        num_frames=args.num_frames,
+        num_tracks=args.num_tracks,
+        position_randomization=args.position_randomize,
+        delete_probability=args.delete_probability,
+        add_probability=args.add_probability,
+    )
+
+    track_generator.save_data(args.output)
 
 
 if __name__ == "__main__":
