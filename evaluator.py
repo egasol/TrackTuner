@@ -20,6 +20,7 @@ class Statistics:
                 "id_switches": 0,
                 "last_track_id": None,
                 "associated_track_ids": set(),
+                "track_id_count": {},
             }
         self.annotation_stats[obj_id]["lifespan"] += 1
 
@@ -53,6 +54,11 @@ class Statistics:
 
             self.annotation_stats[obj_id]["tracked"] += 1
             self.track_stats[track_id]["tracked"] += 1
+
+            if track_id not in self.annotation_stats[obj_id]["track_id_count"]:
+                self.annotation_stats[obj_id]["track_id_count"][track_id] = 0
+            self.annotation_stats[obj_id]["track_id_count"][track_id] += 1
+
             return True
         return False
 
@@ -61,7 +67,14 @@ class Statistics:
 
     def calculate_statistics(self) -> None:
         for obj_id, stats in self.annotation_stats.items():
-            tracked_percentage = (stats["tracked"] / stats["lifespan"]) * 100
+            if stats["track_id_count"]:
+                longest_match_track_id = max(
+                    stats["track_id_count"], key=stats["track_id_count"].get
+                )
+                longest_match_count = stats["track_id_count"][longest_match_track_id]
+                tracked_percentage = (longest_match_count / stats["lifespan"]) * 100
+            else:
+                tracked_percentage = 0
             stats["successfully_tracked"] = tracked_percentage >= 75
             stats["tracked_percentage"] = tracked_percentage
 
