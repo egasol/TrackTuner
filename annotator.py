@@ -118,10 +118,7 @@ class TrackGenerator:
 
         return new_data
 
-    def save_data(self, output_folder: Path) -> None:
-        annotations_path = output_folder / "annotations.json"
-        detections_path = output_folder / "detections.json"
-
+    def save_data(self, annotations_path: Path, detections_path: Path) -> None:
         detections = self.modify_tracks()
 
         save_json(
@@ -146,9 +143,14 @@ def parse_args():
     )
 
     parser.add_argument(
-        "--output",
+        "--output-references",
         type=Path,
-        help="Output folder to store references and detections.",
+        help="Path to save references.",
+    )
+    parser.add_argument(
+        "--output-detections",
+        type=Path,
+        help="Path to save detections.",
     )
     parser.add_argument("--num-frames", type=int, help="Number of frames.")
     parser.add_argument(

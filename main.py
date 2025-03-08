@@ -1,17 +1,20 @@
 import optuna
 import random
+from typing import List
 
-import annotator
-import optimizer
-import tracker
-import utilities
+import optimizer  # TODO: Change to import Optimizer class when available
+
+from annotator import TrackGenerator
+from tracker import TrackSettings, Tracker, run_tracker_with_parameters
+from utilities import load_json, save_json, get_data_path, get_media_path
 from visualizer import Visualizer, VisualizerInput
 
-if __name__ == "__main__":
-    annotations_path = utilities.get_data_path() / "annotations.json"
-    detections_path = utilities.get_data_path() / "detections.json"
-    tracked_path = utilities.get_data_path() / "tracked.json"
-    parameters_path = utilities.get_data_path() / "parameters.json"
+
+def run_single() -> None:
+    annotations_path = get_data_path() / "annotations.json"
+    detections_path = get_data_path() / "detections.json"
+    tracked_path = get_data_path() / "tracked.json"
+    parameters_path = get_data_path() / "parameters.json"
 
     random.seed(42)
 
@@ -23,16 +26,16 @@ if __name__ == "__main__":
         delete_probability=0.14,
         add_probability=4.82,
     )
-    track_generator.save_data()
+    track_generator.save_data(annotations_path, detections_path)
 
     # Optimize parameters
     study = optuna.create_study(direction="minimize")
     study.optimize(optimizer.objective, n_trials=200)
-    utilities.save_json(parameters_path, study.best_params)
+    save_json(parameters_path, study.best_params)
 
     # Run tracker on optimized parameters
-    detections = utilities.load_json(detections_path)
-    tracker_settings = tracker.TrackSettings(
+    detections = load_json(detections_path)
+    tracker_settings = TrackSettings(
         measurement_noise=study.best_params["measurement_noise"],
         process_noise=study.best_params["process_noise"],
         covariance=study.best_params["covariance"],
@@ -41,8 +44,8 @@ if __name__ == "__main__":
         min_hits=study.best_params["min_hits"],
         max_consecutive_misses=study.best_params["max_consecutive_misses"],
     )
-    output_data = tracker.run_tracker_with_parameters(tracker_settings, detections)
-    utilities.save_json(tracked_path, output_data)
+    output_data = run_tracker_with_parameters(tracker_settings, detections)
+    save_json(tracked_path, output_data)
 
     # Visualize results
     visualizer = Visualizer(
@@ -52,4 +55,8 @@ if __name__ == "__main__":
             VisualizerInput(tracked_path),
         ]
     )
-    visualizer.visualize(utilities.get_media_path() / "comparison.png")
+    visualizer.visualize(get_media_path() / "comparison.png")
+
+
+if __name__ == "__main__":
+    run_single()
