@@ -34,7 +34,7 @@ def _generate_input_data(
 
 
 def _run_tracker(
-    detections_dir: Path, tracked_dir: Path, filelist: str, parameters: Dict
+    detections_dir: Path, tracked_dir: Path, filelist: List[str], parameters: Dict
 ) -> None:
     tracker_settings = TrackSettings(
         measurement_noise=parameters["measurement_noise"],
@@ -56,6 +56,24 @@ def _run_tracker(
         save_json(tracked_path, tracked_data)
 
 
+def _visualize(
+    references_dir: Path,
+    detections_dir: Path,
+    tracked_dir: Path,
+    visualization_path: Path,
+    filelist: List[str],
+):
+    for file in filelist:
+        input_files = [
+            VisualizerInput(references_dir / f"{file}.json", title="references"),
+            # VisualizerInput(detections_dir / f"{file}.json", title="detections", ignore_id=True),
+            VisualizerInput(tracked_dir / f"{file}.json", title="tracked"),
+        ]
+
+        visualizer = Visualizer(input_files)
+        visualizer.visualize(visualization_path / f"{file}.png")
+
+
 def run(n_files: int, n_trials: int) -> None:
     filelist = _create_filelist("clip", n_files)
 
@@ -63,6 +81,7 @@ def run(n_files: int, n_trials: int) -> None:
     detections_dir = get_data_path() / "detections"
     tracked_dir = get_data_path() / "tracked"
     parameters_path = get_data_path() / "parameters.json"
+    visualization_path = get_media_path()
 
     # Create input data
     _generate_input_data(references_dir, detections_dir, filelist, seed=42)
@@ -72,10 +91,13 @@ def run(n_files: int, n_trials: int) -> None:
     parameters = optimizer.optimize(n_trials=n_trials)
     save_json(parameters_path, parameters)
 
-    # temporary
-    parameters = load_json(parameters_path)
-
+    # Run tracker
     _run_tracker(detections_dir, tracked_dir, filelist, parameters)
+
+    # Visualize
+    _visualize(
+        references_dir, detections_dir, tracked_dir, visualization_path, filelist
+    )
 
 
 if __name__ == "__main__":

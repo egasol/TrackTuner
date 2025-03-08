@@ -10,8 +10,9 @@ import utilities
 
 
 class VisualizerInput:
-    def __init__(self, filepath: Path, ignore_id: bool = False):
+    def __init__(self, filepath: Path, title: str, ignore_id: bool = False):
         self.filepath = filepath
+        self.title = title
         self.ignore_id = ignore_id
 
 
@@ -82,7 +83,7 @@ class Visualizer:
             ax.set_xlabel("X")
             ax.set_ylabel("Y")
             ax.set_zlabel("Z")
-            ax.set_title(input_settings.filepath.stem)
+            ax.set_title(input_settings.title)
 
         plt.savefig(output, dpi=50)
         print("Summarizing plots to", output, f"({time() - t0:.2f}s)")
@@ -90,9 +91,15 @@ class Visualizer:
 
 if __name__ == "__main__":
     input_files = [
-        VisualizerInput(utilities.get_data_path() / "annotations.json"),
-        VisualizerInput(utilities.get_data_path() / "detections.json", ignore_id=True),
-        VisualizerInput(utilities.get_data_path() / "tracked.json"),
+        VisualizerInput(
+            utilities.get_data_path() / "annotations.json", title="references"
+        ),
+        VisualizerInput(
+            utilities.get_data_path() / "detections.json",
+            title="detections",
+            ignore_id=True,
+        ),
+        VisualizerInput(utilities.get_data_path() / "tracked.json", title="tracked"),
     ]
 
     visualizer = Visualizer(input_files)
