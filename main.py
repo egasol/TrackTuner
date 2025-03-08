@@ -1,7 +1,7 @@
 import optuna
 import random
 from pathlib import Path
-from typing import List
+from typing import List, Dict
 
 from optimizer import Optimizer
 from annotator import TrackGenerator
@@ -33,6 +33,29 @@ def _generate_input_data(
         track_generator.save_data(references_path, detections_path)
 
 
+def _run_tracker(
+    detections_dir: Path, tracked_dir: Path, filelist: str, parameters: Dict
+) -> None:
+    tracker_settings = TrackSettings(
+        measurement_noise=parameters["measurement_noise"],
+        process_noise=parameters["process_noise"],
+        covariance=parameters["covariance"],
+        distance_threshold=parameters["distance_threshold"],
+        max_age=parameters["max_age"],
+        min_hits=parameters["min_hits"],
+        max_consecutive_misses=parameters["max_consecutive_misses"],
+    )
+
+    for file in filelist:
+        detections_path = detections_dir / f"{file}.json"
+        tracked_path = tracked_dir / f"{file}.json"
+
+        detections = load_json(detections_path)
+
+        tracked_data = run_tracker_with_parameters(tracker_settings, detections)
+        save_json(tracked_path, tracked_data)
+
+
 def run(n_files: int, n_trials: int) -> None:
     filelist = _create_filelist("clip", n_files)
 
@@ -48,6 +71,11 @@ def run(n_files: int, n_trials: int) -> None:
     optimizer = Optimizer(references_dir, detections_dir, filelist)
     parameters = optimizer.optimize(n_trials=n_trials)
     save_json(parameters_path, parameters)
+
+    # temporary
+    parameters = load_json(parameters_path)
+
+    _run_tracker(detections_dir, tracked_dir, filelist, parameters)
 
 
 if __name__ == "__main__":
