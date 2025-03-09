@@ -1,12 +1,14 @@
 import json
 import numpy as np
 import matplotlib.pyplot as plt
+import argparse
 from mpl_toolkits.mplot3d import Axes3D
 from itertools import cycle
 from time import time
 from pathlib import Path
 from typing import Dict, Any
-import utilities
+
+from utilities import load_json
 
 
 class VisualizerInput:
@@ -26,7 +28,7 @@ class Visualizer:
         self.color_default = "b"
 
     def _load_data(self, filepath: Path) -> Dict[str, Any]:
-        return utilities.load_json(filepath)
+        return load_json(filepath)
 
     def _plot_tracks(
         self,
@@ -66,7 +68,9 @@ class Visualizer:
 
                 ax.scatter(x, y, z, color=self.color_default, alpha=alpha)
 
-    def visualize(self, output: Path) -> None:
+    def visualize(self, output: Path, dpi: int = 50) -> None:
+        output.parent.mkdir(parents=True, exist_ok=True)
+
         t0 = time()
         fig = plt.figure(figsize=(18, 6))
         num_files = len(self.input_files)
@@ -85,22 +89,63 @@ class Visualizer:
             ax.set_zlabel("Z")
             ax.set_title(input_settings.title)
 
-        plt.savefig(output, dpi=50)
+        plt.savefig(output, dpi=dpi)
         print("Summarizing plots to", output, f"({time() - t0:.2f}s)")
 
 
-if __name__ == "__main__":
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run tracker given detections and tracker parameters."
+    )
+
+    parser.add_argument(
+        "--input-references",
+        type=Path,
+        required=False,
+        default=None,
+        help="Path to detections json file.",
+    )
+    parser.add_argument(
+        "--input-detections",
+        type=Path,
+        required=False,
+        default=None,
+        help="Path to detections json file.",
+    )
+    parser.add_argument(
+        "--input-tracked",
+        type=Path,
+        required=False,
+        default=None,
+        help="Path to tracked json file.",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Path to output visualization comparison.",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
     input_files = [
-        VisualizerInput(
-            utilities.get_data_path() / "annotations.json", title="references"
-        ),
-        VisualizerInput(
-            utilities.get_data_path() / "detections.json",
-            title="detections",
-            ignore_id=True,
-        ),
-        VisualizerInput(utilities.get_data_path() / "tracked.json", title="tracked"),
+        VisualizerInput(path, title=title, ignore_id=ignore_id)
+        for path, title, ignore_id in [
+            (args.input_references, "references", False),
+            (args.input_detections, "detections", True),
+            (args.input_tracked, "tracked", False),
+        ]
+        if path is not None
     ]
 
+    assert len(input_files) > 0, "Error: Please specify at least one input file."
+
     visualizer = Visualizer(input_files)
-    visualizer.visualize(utilities.get_media_path() / "comparison.png")
+    visualizer.visualize(args.output)
+
+
+if __name__ == "__main__":
+    main()
