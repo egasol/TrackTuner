@@ -95,27 +95,24 @@ class Visualizer:
 
 def parse_args():
     parser = argparse.ArgumentParser(
-        description="Run tracker given detections and tracker parameters."
+        description="Run visualization given references, detections or tracks."
     )
 
     parser.add_argument(
         "--input-references",
         type=Path,
-        required=False,
         default=None,
-        help="Path to detections json file.",
+        help="Path to references json file.",
     )
     parser.add_argument(
         "--input-detections",
         type=Path,
-        required=False,
         default=None,
         help="Path to detections json file.",
     )
     parser.add_argument(
         "--input-tracked",
         type=Path,
-        required=False,
         default=None,
         help="Path to tracked json file.",
     )
@@ -123,6 +120,12 @@ def parse_args():
         "--output",
         type=Path,
         help="Path to output visualization comparison.",
+    )
+    parser.add_argument(
+        "--dpi",
+        type=int,
+        default=50,
+        help="Resolution of the plots. (default: %(default)s)",
     )
 
     return parser.parse_args()
@@ -144,7 +147,7 @@ def main() -> None:
     assert len(input_files) > 0, "Error: Please specify at least one input file."
 
     visualizer = Visualizer(input_files)
-    visualizer.visualize(args.output)
+    visualizer.visualize(args.output, dpi=args.dpi)
 
 
 if __name__ == "__main__":
