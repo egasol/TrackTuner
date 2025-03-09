@@ -1,10 +1,12 @@
 import json
 import numpy as np
+import argparse
+from pathlib import Path
 from enum import Enum
 from filterpy.kalman import KalmanFilter
 from typing import Any, Dict, List, Tuple
 from scipy.optimize import linear_sum_assignment
-import utilities
+from utilities import get_data_path, load_json, save_json
 
 
 class TrackStage(Enum):
@@ -244,13 +246,35 @@ def run_tracker_with_parameters(
     return output_data
 
 
-def main() -> None:
-    parameters_path = utilities.get_data_path() / "parameters.json"
-    detections_path = utilities.get_data_path() / "detections.json"
-    tracked_path = utilities.get_data_path() / "tracked.json"
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run tracker given detections and tracker parameters."
+    )
 
-    detections = utilities.load_json(detections_path)
-    parameters = utilities.load_json(parameters_path)
+    parser.add_argument(
+        "--input-detections",
+        type=Path,
+        help="Path to detections json file.",
+    )
+    parser.add_argument(
+        "--input-parameters",
+        type=Path,
+        help="Path to parameters load json file",
+    )
+    parser.add_argument(
+        "--output",
+        type=Path,
+        help="Path to output tracks json file.",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    detections = load_json(args.input_detections)
+    parameters = load_json(args.input_parameters)
     tracker_settings = TrackSettings(
         measurement_noise=parameters["measurement_noise"],
         process_noise=parameters["process_noise"],
@@ -262,7 +286,7 @@ def main() -> None:
     )
     output_data = run_tracker_with_parameters(tracker_settings, detections)
 
-    utilities.save_json(tracked_path, output_data)
+    save_json(args.output, output_data)
 
 
 if __name__ == "__main__":
