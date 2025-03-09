@@ -122,7 +122,17 @@ class Track:
         return np.mean(self.position_history, axis=0)
 
     def __repr__(self) -> str:
-        return f"Track {self.id}: {self.get_state()} | Velocity: {self.get_velocity()} | Acceleration: {self.get_acceleration()} | Stage: {self.stage}"
+        return (
+            f"Track {self.id}: {self.get_state()} | "
+            f"Velocity: {self.get_velocity()} | "
+            f"Acceleration: {self.get_acceleration()} | "
+            f"Stage: {self.stage} | "
+            f"Age: {self.age} | "
+            f"Hits: {self.hits} | "
+            f"HitStreak: {self.hit_streak} | "
+            f"TimeSinceUpdate: {self.time_since_update} | "
+            f"ConsecutiveMisses: {self.consecutive_misses}"
+        )
 
 
 class Tracker:
@@ -148,7 +158,7 @@ class Tracker:
         cost_matrix = np.zeros((len(self.tracks), len(detections)))
 
         for i, track in enumerate(self.tracks):
-            predicted_state = track.predict()[:3].flatten()
+            predicted_state = track.get_state()
             for j, detection in enumerate(detections):
                 cost_matrix[i, j] = np.linalg.norm(predicted_state - detection)
 
