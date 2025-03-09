@@ -83,7 +83,6 @@ class TrackGenerator:
         )
         for _ in range(num_new_tracks):
             new_track = Detection(
-                id=max([t.id for t in new_tracks] + [-1]) + 1,
                 x=np.random.uniform(x_range[0], x_range[1]),
                 y=np.random.uniform(y_range[0], y_range[1]),
                 z=np.random.uniform(z_range[0], z_range[1]),
@@ -100,7 +99,7 @@ class TrackGenerator:
                 if random.random() < self.delete_probability:
                     continue
 
-                new_track = Detection(id=track.id, x=track.x, y=track.y, z=track.z)
+                new_track = Detection(x=track.x, y=track.y, z=track.z)
                 new_track.x += np.random.uniform(
                     -self.position_randomization, self.position_randomization
                 )
