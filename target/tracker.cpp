@@ -429,10 +429,15 @@ void saveJson(const std::string &filepath, const json &data) {
   file << data.dump(4);
 }
 
-int main() {
-  std::string parametersPath = "parameters.json";
-  std::string detectionsPath = "detections.json";
-  std::string trackedPath = "tracked.json";
+int main(int argc, char* argv[]) {
+  if (argc != 4) {
+      std::cerr << "Usage: " << argv[0] << " <parametersPath> <detectionsPath> <trackedPath>" << std::endl;
+      return 1;
+  }
+
+  std::string parametersPath = argv[1];
+  std::string detectionsPath = argv[2];
+  std::string trackedPath = argv[3];
 
   json detections = loadJson(detectionsPath);
   json parameters = loadJson(parametersPath);
