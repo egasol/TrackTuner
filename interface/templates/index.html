@@ -1,0 +1,73 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>Run Synthetic Tracker Optimizer</title>
+  <link href="https://fonts.googleapis.com/css?family=Roboto:400,500&display=swap" rel="stylesheet">
+  <link rel="stylesheet" href="{{ url_for('static', filename='styles.css') }}">
+</head>
+<body>
+  <div class="container">
+    <h1>Run Synthetic Tracker Optimizer</h1>
+    <form id="runForm">
+      <div>
+        <label for="n_files">Number of Synthetic Tracker Sequences</label>
+        <div class="description">
+          Enter the number of synthetic tracker sequences you wish to generate.
+        </div>
+        <input type="number" name="n_files" id="n_files" placeholder="5" required>
+      </div>
+
+      <div>
+        <label for="trials">Number of Optuna Trials</label>
+        <div class="description">
+          Enter the number of trials for Optuna to optimize the tracker parameters.
+        </div>
+        <input type="number" name="trials" id="trials" placeholder="10" required>
+      </div>
+
+      <button type="submit">Run Script</button>
+    </form>
+
+    <h2>Output:</h2>
+    <pre id="output"></pre>
+
+    <div id="error" style="color: red;"></div>
+  </div>
+
+  <script>
+    document.getElementById('runForm').addEventListener('submit', function(e) {
+      e.preventDefault();
+
+      document.getElementById('output').textContent = "";
+      document.getElementById('error').textContent = "";
+
+      const nFiles = document.getElementById('n_files').value;
+      const trials = document.getElementById('trials').value;
+
+      const streamUrl = `/stream?n_files=${encodeURIComponent(nFiles)}&trials=${encodeURIComponent(trials)}`;
+
+      const evtSource = new EventSource(streamUrl);
+
+      evtSource.onmessage = function(event) {
+        document.getElementById('output').textContent += event.data;
+      };
+
+      evtSource.addEventListener('close', function(event) {
+        console.log("Stream has closed successfully.");
+        evtSource.close();
+      });
+
+      evtSource.onerror = function(err) {
+        document.getElementById('error').textContent = "An error occurred while streaming output.";
+        evtSource.close();
+      };
+
+      evtSource.onopen = function() {
+        console.log("Connection to stream opened.");
+      };
+    });
+  </script>
+</body>
+</html>
