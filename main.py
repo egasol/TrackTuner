@@ -1,5 +1,6 @@
 import optuna
 import random
+import argparse
 from pathlib import Path
 from typing import List, Dict
 
@@ -74,8 +75,29 @@ def _visualize(
         visualizer.visualize(visualization_path / f"{file}.png")
 
 
-def run(n_files: int, n_trials: int) -> None:
-    filelist = _create_filelist("clip", n_files)
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run full tracker optimizer with synthetic sequences."
+    )
+
+    parser.add_argument(
+        "--sequences",
+        type=int,
+        help="Number of synthetic reference sequences.",
+    )
+    parser.add_argument(
+        "--trials",
+        type=int,
+        help="Number of optuna trials",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    filelist = _create_filelist("clip", args.sequences)
 
     references_dir = get_data_path() / "references"
     detections_dir = get_data_path() / "detections"
@@ -88,7 +110,7 @@ def run(n_files: int, n_trials: int) -> None:
 
     # Optimize tracker parameters
     optimizer = Optimizer(references_dir, detections_dir, filelist)
-    parameters = optimizer.optimize(n_trials=n_trials)
+    parameters = optimizer.optimize(n_trials=args.trials)
     save_json(parameters_path, parameters)
 
     # Run tracker
@@ -101,4 +123,4 @@ def run(n_files: int, n_trials: int) -> None:
 
 
 if __name__ == "__main__":
-    run(n_files=5, n_trials=10)
+    main()
