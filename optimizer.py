@@ -61,8 +61,6 @@ class Optimizer:
             for references, detections in self.input_data
         ]
 
-        print(performance)
-
         return statistics.mean(performance)
 
     def optimize(self, n_trials: int) -> Dict:
@@ -70,18 +68,3 @@ class Optimizer:
         self.study.optimize(self.objective, n_trials=n_trials)
 
         return self.study.best_params
-
-
-def main() -> None:
-    optimizer = Optimizer(
-        Path("/home/pi/simon/git/TrackTuner/data/references"),
-        Path("/home/pi/simon/git/TrackTuner/data/detections"),
-        ["file0", "file1", "file2", "file3", "file4"],
-    )
-    parameters = optimizer.optimize(10)
-
-    print(parameters)
-
-
-if __name__ == "__main__":
-    main()
