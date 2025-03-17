@@ -1,6 +1,8 @@
 import json
 import numpy as np
 import statistics
+import argparse
+from pathlib import Path
 from typing import Any, Dict, Set
 
 import utilities
@@ -125,8 +127,6 @@ class Statistics:
         for track_id, stats in self.track_stats.items():
             print(f"Track ID: {track_id}")
             print(f"  Lifespan: {stats['lifespan']} frames")
-            print(f"  Tracked: {stats['tracked']} frames")
-            print(f"  ID Switches: {stats['id_switches']}")
             print(f"  Associated Object IDs: {sorted(stats['associated_obj_ids'])}")
 
 
@@ -156,9 +156,30 @@ def process_data(annotations: Dict[str, Any], tracks: Dict[str, Any]) -> Statist
     return stats
 
 
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Evaluate references with tracked objects."
+    )
+
+    parser.add_argument(
+        "--input-references",
+        type=Path,
+        help="Path to references file.",
+    )
+    parser.add_argument(
+        "--input-tracked",
+        type=Path,
+        help="Path to tracked objects file.",
+    )
+
+    return parser.parse_args()
+
+
 def main() -> None:
-    tracked = utilities.load_json(utilities.get_data_path() / "tracked.json")
-    annotations = utilities.load_json(utilities.get_data_path() / "annotations.json")
+    args = parse_args()
+
+    annotations = utilities.load_json(args.input_references)
+    tracked = utilities.load_json(args.input_tracked)
 
     stats = process_data(annotations, tracked)
     stats.print_statistics()
