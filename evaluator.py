@@ -3,6 +3,7 @@ import numpy as np
 import statistics
 import argparse
 from pathlib import Path
+from tabulate import tabulate
 from typing import Any, Dict, Set
 
 import utilities
@@ -111,30 +112,64 @@ class Statistics:
         return average_tracked_percentage, average_id_switches, self.false_positives
 
     def print_statistics(self) -> None:
-        print("Tracking Performance Statistics:")
-        print("Annotations:")
+        annotation_table = []
         for obj_id, stats in self.annotation_stats.items():
-            print(f"Object ID: {obj_id}")
-            print(f"  Lifespan: {stats['lifespan']} frames")
-            print(
-                f"  Tracked: {stats['tracked']} frames ({stats['tracked_percentage']:.2f}%)"
+            annotation_table.append(
+                [
+                    obj_id,
+                    stats["lifespan"],
+                    stats["tracked"],
+                    f"{stats['tracked_percentage']:.2f}%",
+                    stats["id_switches"],
+                    stats["successfully_tracked"],
+                    ", ".join(map(str, sorted(stats["associated_track_ids"]))),
+                ]
             )
-            print(f"  ID Switches: {stats['id_switches']}")
-            print(f"  Successfully Tracked: {stats['successfully_tracked']}")
-            print(f"  Associated Track IDs: {sorted(stats['associated_track_ids'])}")
 
-        print("\nTracks:")
+        if annotation_table:
+            annotation_headers = [
+                "Object ID",
+                "Lifespan (frames)",
+                "Tracked (frames)",
+                "Tracked %",
+                "ID Switches",
+                "Successfully Tracked",
+                "Associated Track IDs",
+            ]
+            print("\nReference based statistics")
+            print(
+                tabulate(annotation_table, headers=annotation_headers, tablefmt="grid")
+            )
+
+        track_table = []
         for track_id, stats in self.track_stats.items():
-            print(f"Track ID: {track_id}")
-            print(f"  Lifespan: {stats['lifespan']} frames")
-            print(f"  Associated Object IDs: {sorted(stats['associated_obj_ids'])}")
+            track_table.append(
+                [
+                    track_id,
+                    stats["lifespan"],
+                    ", ".join(map(str, sorted(stats["associated_obj_ids"]))),
+                ]
+            )
+
+        if track_table:
+            track_headers = ["Track ID", "Lifespan (frames)", "Associated Object IDs"]
+            print("\nTrack based statistics")
+            print(
+                tabulate(
+                    track_table,
+                    headers=track_headers,
+                    tablefmt="grid",
+                    colalign=("center", "center", "left"),
+                )
+            )
 
 
 def process_data(annotations: Dict[str, Any], tracks: Dict[str, Any]) -> Statistics:
     stats = Statistics()
+    all_tracks = set()
+    matched_tracks = set()
 
     for frame, annotation in annotations.items():
-        tracked_objs: Set[int] = set()
         for obj in annotation["tracks"]:
             obj_id = obj["id"]
             obj_position = np.array([obj["x"], obj["y"], obj["z"]])
@@ -142,15 +177,16 @@ def process_data(annotations: Dict[str, Any], tracks: Dict[str, Any]) -> Statist
 
             for track in tracks.get(frame, {}).get("tracks", []):
                 track_id = track["id"]
+                all_tracks.add(track_id)
                 track_position = np.array([track["x"], track["y"], track["z"]])
                 if stats.add_track(
                     frame, obj_id, track_id, track_position, obj_position
                 ):
-                    tracked_objs.add(track_id)
+                    matched_tracks.add(track_id)
 
-        for track in tracks.get(frame, {}).get("tracks", []):
-            if track["id"] not in tracked_objs:
-                stats.update_false_positives(track["id"])
+    for track_id in all_tracks:
+        if track_id not in matched_tracks:
+            stats.update_false_positives(track_id)
 
     stats.calculate_statistics()
     return stats
@@ -183,8 +219,28 @@ def main() -> None:
 
     stats = process_data(annotations, tracked)
     stats.print_statistics()
-    print("performance_metric:", stats.get_performance_metric())
-    print("performance_multi_metrics:", stats.get_performance_multi_metric())
+
+    performance_metric = stats.get_performance_metric()
+    avg_tracked_percentage, id_switches, false_positives = (
+        stats.get_performance_multi_metric()
+    )
+
+    metrics = [
+        ["Average tracked percentage", f"{avg_tracked_percentage:.2f}%"],
+        ["Average ID switches", id_switches],
+        ["False positives", false_positives],
+        ["Single value performance metric", f"{performance_metric:.2f}"],
+    ]
+
+    print("Summary")
+    print(
+        tabulate(
+            metrics,
+            headers=["Metric", "Value"],
+            tablefmt="grid",
+            colalign=("left", "right"),
+        )
+    )
 
 
 if __name__ == "__main__":
