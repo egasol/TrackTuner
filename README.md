@@ -103,6 +103,13 @@ The **Performance Evaluator** compares the tracker’s output against reference 
 - **Multi-Metric Evaluation**:
   - Provides average values for tracked percentages, ID switches, and total false positives across objects.
 
+#### Example Command
+```
+python annotator.py \
+  --input-references references.json \
+  --input-tracked tracked.json
+```
+
 ---
 
 ### 4. Parameter Optimizer
