@@ -2,6 +2,7 @@ import json
 import numpy as np
 import optuna
 import statistics
+import argparse
 from pathlib import Path
 from optuna.visualization import plot_optimization_history, plot_param_importances
 from typing import Any, Dict, List, Tuple
@@ -68,3 +69,55 @@ class Optimizer:
         self.study.optimize(self.objective, n_trials=n_trials)
 
         return self.study.best_params
+
+
+def parse_args():
+    parser = argparse.ArgumentParser(
+        description="Run visualization given references, detections or tracks."
+    )
+
+    parser.add_argument(
+        "--references-dir",
+        type=Path,
+        default=None,
+        help="Path to folder containing references.",
+    )
+    parser.add_argument(
+        "--detections-dir",
+        type=Path,
+        default=None,
+        help="Path to folder containing detections.",
+    )
+    parser.add_argument(
+        "--output-parameters",
+        type=Path,
+        default=None,
+        help="Path to save best parameters.",
+    )
+    parser.add_argument(
+        "--filelist",
+        type=str,
+        nargs="+",
+        default=None,
+        help="Path to save best parameters.",
+    )
+    parser.add_argument(
+        "--trials",
+        type=int,
+        default=50,
+        help="Resolution of the plots. (default: %(default)s)",
+    )
+
+    return parser.parse_args()
+
+
+def main() -> None:
+    args = parse_args()
+
+    optimizer = Optimizer(args.references_dir, args.detections_dir, args.filelist)
+    parameters = optimizer.optimize(n_trials=args.trials)
+    save_json(args.output_parameters, parameters)
+
+
+if __name__ == "__main__":
+    main()
