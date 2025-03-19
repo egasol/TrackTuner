@@ -127,6 +127,30 @@ The **Parameter Optimizer** leverages the Optuna framework to automatically fine
 - **Visualization Insights**:
   - Generates visualizations such as Optimization History and Parameter Importances, helping you interpret the optimization process.
 
+#### Example Command
+
+Assuming folders located as
+```
+path
+└── data
+    ├── references
+        ├── clip1.json
+        └── clip2.json
+    └── detections
+        ├── clip1.json
+        └── clip2.json
+```
+
+The optimizer can be used
+```
+python optimizer.py \
+  --references-dir path/data/references/ \
+  --detections-dir path/data/detections/ \
+  --output-parameters path/data/best_parameters.json \
+  --filelist clip1 clip2 \
+  --trials 20
+```
+
 ---
 
 ### 5. Visualizer
