@@ -4,10 +4,11 @@ document.getElementById('runForm').addEventListener('submit', function(e) {
   document.getElementById('output').textContent = "";
   document.getElementById('error').textContent = "";
 
+  const rootName = document.getElementById('root_name').value;
   const nFiles = document.getElementById('n_files').value;
   const trials = document.getElementById('trials').value;
 
-  const streamUrl = `/stream?n_files=${encodeURIComponent(nFiles)}&trials=${encodeURIComponent(trials)}`;
+  const streamUrl = `/stream?root_name=${encodeURIComponent(rootName)}&n_files=${encodeURIComponent(nFiles)}&trials=${encodeURIComponent(trials)}`;
 
   const evtSource = new EventSource(streamUrl);
 

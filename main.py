@@ -81,6 +81,11 @@ def parse_args():
     )
 
     parser.add_argument(
+        "--root-name",
+        type=Path,
+        help="Name of the study.",
+    )
+    parser.add_argument(
         "--sequences",
         type=int,
         help="Number of synthetic reference sequences.",
@@ -97,13 +102,19 @@ def parse_args():
 def main() -> None:
     args = parse_args()
 
+    root_dir = get_data_path() / args.root_name
+
+    assert not root_dir.exists(), f"Study with name {args.root_name} already exists..."
+
+    root_dir.mkdir()
+
     filelist = _create_filelist("clip", args.sequences)
 
-    references_dir = get_data_path() / "references"
-    detections_dir = get_data_path() / "detections"
-    tracked_dir = get_data_path() / "tracked"
-    parameters_path = get_data_path() / "parameters.json"
-    visualization_path = get_media_path()
+    references_dir = root_dir / "references"
+    detections_dir = root_dir / "detections"
+    tracked_dir = root_dir / "tracked"
+    parameters_path = root_dir / "parameters.json"
+    visualization_path = root_dir / "visualization"
 
     # Create input data
     _generate_input_data(references_dir, detections_dir, filelist, seed=42)

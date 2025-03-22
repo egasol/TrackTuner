@@ -38,7 +38,7 @@ body {
 	margin-bottom: 8px;
   }
   
-  input[type="number"] {
+  input {
 	width: 100%;
 	padding: 10px;
 	margin-bottom: 20px;

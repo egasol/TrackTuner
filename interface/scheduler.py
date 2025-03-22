@@ -17,17 +17,19 @@ def index():
 
 @app.route("/stream")
 def stream():
+    root_name = request.args.get("root_name", "")
     n_files = request.args.get("n_files", "5")
     trials = request.args.get("trials", "10")
 
     def generate():
-        # print(Path(__file__).parent)
         script_path = Path(__file__).resolve().parent / "../main.py"
 
         process = subprocess.Popen(
             [
                 "python",
                 script_path,
+                "--root-name",
+                root_name,
                 "--sequences",
                 n_files,
                 "--trials",
