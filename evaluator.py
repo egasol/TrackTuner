@@ -227,7 +227,7 @@ def main() -> None:
 
     metrics = [
         ["Average tracked percentage", f"{avg_tracked_percentage:.2f}%"],
-        ["Average ID switches", id_switches],
+        ["Average ID switches", f"{id_switches:.2f}"],
         ["False positives", false_positives],
         ["Single value performance metric", f"{performance_metric:.2f}"],
     ]
